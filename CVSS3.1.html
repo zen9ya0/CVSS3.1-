@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVSS 3.1 計算工具</title>
+<style>
+  * { box-sizing: border-box; }
+  
+  body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+  }
+  
+  .header h1 {
+    font-size: 2.5rem;
+    margin: 0 0 10px 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  .header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+  }
+  
+  .main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+  }
+  
+  .card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  }
+  
+  .card h3 {
+    color: #4a5568;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+  }
+  
+  .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  input[type="text"], select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background: #f8f9fa;
+  }
+  
+  input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    background: white;
+  }
+  
+  .btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .btn-copy {
+    background: #48bb78;
+    font-size: 14px;
+    padding: 8px 15px;
+    margin-left: 10px;
+  }
+  
+  .btn-copy:hover {
+    background: #38a169;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+  }
+  
+  .result {
+    font-weight: bold;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  
+  .critical { 
+    color: #fff; 
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  }
+  .high { 
+    color: #fff; 
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+  }
+  .medium { 
+    color: #fff; 
+    background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+  }
+  .low { 
+    color: #fff; 
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+  }
+  
+  .error {
+    color: #e53e3e;
+    background: #fed7d7;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    border-left: 4px solid #e53e3e;
+  }
+  
+  .success {
+    color: #2f855a;
+    background: #c6f6d5;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    border-left: 4px solid #2f855a;
+  }
+  
+  .reference-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  
+  .reference-section h3 {
+    color: #4a5568;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+  }
+  
+  table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    margin-top: 20px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  
+  th { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  
+  td { 
+    padding: 12px 10px; 
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  tr:nth-child(even) {
+    background: #f8f9fa;
+  }
+  
+  tr:hover {
+    background: #e6fffa;
+  }
+  
+  .vector-input {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+  }
+  
+  .score-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+  }
+  
+  .score-item {
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  .score-item .label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 5px;
+  }
+  
+  .score-item .value {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  @media (max-width: 768px) {
+    .main-content {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    .header h1 {
+      font-size: 2rem;
+    }
+    
+    .container {
+      padding: 15px;
+    }
+    
+    .card {
+      padding: 20px;
+    }
+  }
+  
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+<h1>CVSS 3.1 計算工具</h1>
+    <p>Common Vulnerability Scoring System 3.1 版本計算器</p>
+  </div>
+
+  <div class="main-content">
+    <div class="card">
+      <h3>📝 直接輸入向量 (Vector String)</h3>
+      <div class="input-group">
+        <label for="vector">CVSS 向量字串</label>
+        <input type="text" id="vector" class="vector-input" placeholder="範例：CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:U/RL:O/RC:C">
+        <div id="vectorError"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🎛️ 下拉選單操作</h3>
+<div id="selectors"></div>
+      <button class="btn" onclick="calcFromSelectors()">計算 CVSS 分數</button>
+    </div>
+  </div>
+
+  <div id="output" class="result" style="display: none;"></div>
+
+  <div class="reference-section">
+    <h3>📊 計算歷史</h3>
+    <div style="margin-bottom: 20px;">
+      <button class="btn" onclick="clearHistory()" style="background: #e53e3e; font-size: 14px; padding: 8px 15px;">🗑️ 清除歷史</button>
+    </div>
+    <div id="historyDisplay"></div>
+  </div>
+
+  <div class="reference-section">
+    <h3>📚 CVSS 向量速查表</h3>
+<table>
+      <thead>
+        <tr>
+          <th>向量</th>
+          <th>選項</th>
+          <th>英文</th>
+          <th>中文</th>
+          <th>數值</th>
+        </tr>
+      </thead>
+<tbody id="refTable"></tbody>
+</table>
+  </div>
+</div>
+
+<script>
+// 歷史記錄功能
+let calculationHistory = JSON.parse(localStorage.getItem('cvssHistory') || '[]');
+
+function saveToHistory(obj, result) {
+  const historyItem = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    vector: obj,
+    result: result,
+    vectorString: `CVSS:3.1/AV:${obj.AV}/AC:${obj.AC}/PR:${obj.PR}/UI:${obj.UI}/S:${obj.S}/C:${obj.C}/I:${obj.I}/A:${obj.A}/E:${obj.E}/RL:${obj.RL}/RC:${obj.RC}`
+  };
+  
+  calculationHistory.unshift(historyItem);
+  if (calculationHistory.length > 50) {
+    calculationHistory = calculationHistory.slice(0, 50);
+  }
+  
+  localStorage.setItem('cvssHistory', JSON.stringify(calculationHistory));
+  updateHistoryDisplay();
+}
+
+function updateHistoryDisplay() {
+  const historyDiv = document.getElementById('historyDisplay');
+  if (!historyDiv) return;
+  
+  if (calculationHistory.length === 0) {
+    historyDiv.innerHTML = '<p style="text-align: center; color: #666;">尚無計算記錄</p>';
+    return;
+  }
+  
+  let html = '<h4>📊 計算歷史</h4>';
+  calculationHistory.slice(0, 10).forEach(item => {
+    const levelClass = item.result.level.toLowerCase();
+    html += `
+      <div class="history-item" style="background: white; margin: 10px 0; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span class="badge ${levelClass}" style="padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px;">${item.result.level}</span>
+          <span style="font-size: 12px; color: #666;">${new Date(item.timestamp).toLocaleString()}</span>
+        </div>
+        <div style="font-family: monospace; font-size: 12px; background: #f5f5f5; padding: 8px; border-radius: 4px; margin-bottom: 10px; word-break: break-all;">
+          ${item.vectorString}
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span><strong>Base:</strong> ${item.result.BaseScore} | <strong>Temporal:</strong> ${item.result.Temporal}</span>
+          <button class="btn-copy" data-vector="${item.vectorString}" onclick="copyToClipboard(this)" style="padding: 4px 8px; font-size: 12px;">複製</button>
+        </div>
+      </div>
+    `;
+  });
+  
+  if (calculationHistory.length > 10) {
+    html += `<p style="text-align: center; color: #666; font-size: 12px;">顯示最近 10 筆記錄，共 ${calculationHistory.length} 筆</p>`;
+  }
+  
+  historyDiv.innerHTML = html;
+}
+
+function clearHistory() {
+  if (confirm('確定要清除所有計算歷史嗎？')) {
+    calculationHistory = [];
+    localStorage.removeItem('cvssHistory');
+    updateHistoryDisplay();
+  }
+}
+
+// 向量資料
+const metrics = {
+  AV: { N:[0.85,"Network","網路"], A:[0.62,"Adjacent Network","相鄰網路"], L:[0.55,"Local","本地"], P:[0.2,"Physical","實體"] },
+  AC: { L:[0.77,"Low","低"], H:[0.44,"High","高"] },
+  PRu: { N:[0.85,"None","無"], L:[0.62,"Low","低"], H:[0.27,"High","高"] },
+  PRc: { N:[0.85,"None","無"], L:[0.68,"Low","低"], H:[0.5,"High","高"] },
+  UI: { N:[0.85,"None","無"], R:[0.62,"Required","需要"] },
+  CIA: { N:[0.0,"None","無"], L:[0.22,"Low","低"], H:[0.56,"High","高"] },
+  E: { X:[1.0,"Not Defined","未定義"], U:[0.91,"Unproven","未證實"], P:[0.94,"Proof-of-Concept","概念驗證"], F:[0.97,"Functional","可行攻擊程式"], H:[1.0,"High","已廣泛濫用"] },
+  RL: { X:[1.0,"Not Defined","未定義"], O:[0.95,"Official Fix","官方修補"], T:[0.96,"Temporary Fix","暫時修補"], W:[0.97,"Workaround","替代方案"], U:[1.0,"Unavailable","無修補"] },
+  RC: { X:[1.0,"Not Defined","未定義"], U:[0.92,"Unknown","未知"], R:[0.96,"Reasonable","可信"], C:[1.0,"Confirmed","已確認"] }
+};
+
+// 建立下拉選單
+function createSelectors(){
+  const fields = [
+    ["AV","Attack Vector / 攻擊途徑"],
+    ["AC","Attack Complexity / 攻擊複雜度"],
+    ["PR","Privileges Required / 所需權限"],
+    ["UI","User Interaction / 使用者互動"],
+    ["S","Scope / 影響範圍"],
+    ["C","Confidentiality / 機密性影響"],
+    ["I","Integrity / 完整性影響"],
+    ["A","Availability / 可用性影響"],
+    ["E","Exploit Code Maturity / 攻擊程式成熟度"],
+    ["RL","Remediation Level / 修補狀態"],
+    ["RC","Report Confidence / 報告可信度"]
+  ];
+  let html="";
+  fields.forEach(f=>{
+    html += `<div class="input-group">
+      <label for="sel_${f[0]}">${f[1]}</label>
+      <select id="sel_${f[0]}">`;
+    if(f[0]==="PR"){
+      html += `<option value="N">None / 無</option><option value="L">Low / 低</option><option value="H">High / 高</option>`;
+    } else if(f[0]==="S"){
+      html += `<option value="U">Unchanged / 未改變</option><option value="C">Changed / 改變</option>`;
+    } else {
+      const set = metrics[f[0]] || metrics.CIA || metrics.E;
+      for(let k in set){
+        html += `<option value="${k}">${k} - ${set[k][1]} / ${set[k][2]}</option>`;
+      }
+    }
+    html += `</select>
+    </div>`;
+  });
+  document.getElementById("selectors").innerHTML = html;
+}
+createSelectors();
+
+function roundup(num) { return Math.ceil(num * 10) / 10; }
+
+function parseVector(v){
+  const obj = {};
+  v.split('/').slice(1).forEach(x=>{
+    const [k,val] = x.split(':');
+    obj[k] = val;
+  });
+  return obj;
+}
+
+function validateVector(v) {
+  // 檢查基本格式
+  if (!v.startsWith("CVSS:3.1/")) {
+    return { valid: false, error: "向量必須以 'CVSS:3.1/' 開頭" };
+  }
+  
+  // 解析向量
+  const parts = v.split('/').slice(1);
+  const obj = {};
+  const errors = [];
+  
+  // 檢查必要欄位
+  const required = ["AV","AC","PR","UI","S","C","I","A"];
+  const optional = ["E","RL","RC"];
+  
+  for (let part of parts) {
+    if (!part.includes(':')) {
+      errors.push(`無效的向量部分: ${part}`);
+      continue;
+    }
+    const [key, value] = part.split(':');
+    obj[key] = value;
+  }
+  
+  // 檢查必要欄位
+  for (let key of required) {
+    if (!obj[key]) {
+      errors.push(`缺少必要欄位: ${key}`);
+    }
+  }
+  
+  // 驗證各欄位值
+  const validValues = {
+    AV: ['N', 'A', 'L', 'P'],
+    AC: ['L', 'H'],
+    PR: ['N', 'L', 'H'],
+    UI: ['N', 'R'],
+    S: ['U', 'C'],
+    C: ['N', 'L', 'H'],
+    I: ['N', 'L', 'H'],
+    A: ['N', 'L', 'H'],
+    E: ['X', 'U', 'P', 'F', 'H'],
+    RL: ['X', 'O', 'T', 'W', 'U'],
+    RC: ['X', 'U', 'R', 'C']
+  };
+  
+  for (let key in obj) {
+    if (validValues[key] && !validValues[key].includes(obj[key])) {
+      errors.push(`無效的 ${key} 值: ${obj[key]}`);
+    }
+  }
+  
+  return errors.length === 0 ? { valid: true } : { valid: false, error: errors.join('; ') };
+}
+
+function calcCVSS(obj){
+  const AV = metrics.AV[obj.AV][0];
+  const AC = metrics.AC[obj.AC][0];
+  const S = obj.S;
+  const PR = (S==="U") ? metrics.PRu[obj.PR][0] : metrics.PRc[obj.PR][0];
+  const UI = metrics.UI[obj.UI][0];
+  const C = metrics.CIA[obj.C][0];
+  const I = metrics.CIA[obj.I][0];
+  const A = metrics.CIA[obj.A][0];
+
+  const Exploitability = 8.22 * AV * AC * PR * UI;
+  const ISC_Base = 1 - ((1-C)*(1-I)*(1-A));
+  let Impact = (S==="U") ? (6.42 * ISC_Base) :
+    (7.52 * (ISC_Base-0.029) - 3.25 * Math.pow(ISC_Base-0.02,15));
+
+  let BaseScore = (Impact<=0) ? 0 :
+    (S==="U" ? roundup(Math.min(Impact+Exploitability,10)) :
+               roundup(Math.min(1.08*(Impact+Exploitability),10)));
+
+  const Temporal = roundup(BaseScore *
+    metrics.E[obj.E][0] * metrics.RL[obj.RL][0] * metrics.RC[obj.RC][0]);
+
+  let level = (BaseScore>=9) ? "Critical" :
+              (BaseScore>=7) ? "High" :
+              (BaseScore>=4) ? "Medium" : "Low";
+
+  return {BaseScore, Temporal, level, Exploitability, Impact, ISC_Base};
+}
+
+function copyToClipboard(btn) {
+  const text = btn.getAttribute("data-vector");
+  const originalText = btn.innerHTML;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = "✅ 已複製";
+    btn.style.background = "#48bb78";
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.background = "";
+    }, 2000);
+  }).catch(err => {
+    console.error("複製失敗:", err);
+    btn.innerHTML = "❌ 失敗";
+    btn.style.background = "#e53e3e";
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.background = "";
+    }, 2000);
+  });
+}
+
+function calcFromVector(){
+  const v = document.getElementById("vector").value.trim();
+  const errorDiv = document.getElementById("vectorError");
+  const outputDiv = document.getElementById("output");
+  
+  if (v.length === 0) {
+    errorDiv.innerHTML = "";
+    outputDiv.style.display = "none";
+    return;
+  }
+  
+  const validation = validateVector(v);
+  if (!validation.valid) {
+    errorDiv.innerHTML = `<div class="error">❌ ${validation.error}</div>`;
+    outputDiv.style.display = "none";
+    return;
+  }
+  
+  errorDiv.innerHTML = '<div class="success">✅ 向量格式正確</div>';
+  const obj = parseVector(v);
+  displayResult(obj);
+}
+
+function calcFromSelectors(){
+  const obj={};
+  document.querySelectorAll("#selectors select").forEach(sel=>{
+    obj[sel.id.replace("sel_","")] = sel.value;
+  });
+  displayResult(obj);
+}
+
+function displayResult(obj){
+  const res = calcCVSS(obj);
+  let cls = res.level.toLowerCase();
+  let vectorStr = `CVSS:3.1/AV:${obj.AV}/AC:${obj.AC}/PR:${obj.PR}/UI:${obj.UI}/S:${obj.S}/C:${obj.C}/I:${obj.I}/A:${obj.A}/E:${obj.E}/RL:${obj.RL}/RC:${obj.RC}`;
+  const outputDiv = document.getElementById("output");
+  
+  // 保存到歷史記錄
+  saveToHistory(obj, res);
+  
+  outputDiv.className = "result " + cls;
+  outputDiv.style.display = "block";
+  outputDiv.innerHTML = `
+    <div class="score-display">
+      <div class="score-item">
+        <div class="label">Base Score</div>
+        <div class="value">${res.BaseScore}</div>
+      </div>
+      <div class="score-item">
+        <div class="label">Temporal Score</div>
+        <div class="value">${res.Temporal}</div>
+      </div>
+      <div class="score-item">
+        <div class="label">Severity Level</div>
+        <div class="value">${res.level}</div>
+      </div>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+      <strong>詳細計算結果：</strong><br>
+      • Exploitability: ${res.Exploitability.toFixed(2)}<br>
+      • Impact: ${res.Impact.toFixed(2)}<br>
+      • ISC_Base: ${res.ISC_Base.toFixed(2)}
+    </div>
+    
+    <div style="margin-top: 20px;">
+      <label style="display: block; margin-bottom: 10px; font-weight: 600;">Vector String:</label>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="text" value="${vectorStr}" class="vector-input" style="flex: 1;" readonly onclick="this.select();">
+        <button class="btn-copy" data-vector="${vectorStr}" onclick="copyToClipboard(this)">📋 複製</button>
+      </div>
+    </div>
+  `;
+}
+
+document.getElementById("vector").addEventListener("input", calcFromVector);
+
+// 生成速查表
+function genRefTable(){
+  let html="";
+  for(let m of ["AV","AC","PRu","PRc","UI","CIA","E","RL","RC"]){
+    for(let k in metrics[m]){
+      html += `<tr><td>${m}</td><td>${k}</td><td>${metrics[m][k][1]}</td><td>${metrics[m][k][2]}</td><td>${metrics[m][k][0]}</td></tr>`;
+    }
+  }
+  document.getElementById("refTable").innerHTML = html;
+}
+
+// 頁面初始化
+document.addEventListener('DOMContentLoaded', function() {
+  genRefTable();
+  updateHistoryDisplay();
+});
+</script>
+</body>
+</html>
