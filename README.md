@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/22382402/README.md)
 # CVSS 3.1 計算機
 
 一個基於網頁的CVSS (Common Vulnerability Scoring System) 3.1版本計算工具，支援中文界面，提供直觀的漏洞評分計算功能。
